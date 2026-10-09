@@ -1,143 +1,290 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { destinations } from '../data/destinations';
-import { planTrips } from '../domain/planTrips';
-import type { TripPlan } from '../domain/types';
-import { GlobeView } from './globe/GlobeView';
+import { estimateTrips, minimumStayOf, planTrips, standardStyle } from '../domain/planTrips';
+import type { Season, TravelStyle } from '../domain/types';
+import { InlineNumber } from './controls';
+import { GlobeView, type GlobeMark } from './globe/GlobeView';
+import { assumptionsOf, joinWithAnd } from './labels';
 import { formatTwd } from './money';
+import { regionName } from './regionName';
+import { TripDetail } from './TripDetail';
+import { TripList, type TripRow } from './TripList';
+
+const destinationById = new Map(destinations.map((destination) => [destination.id, destination]));
+const shortestStay = Math.min(...destinations.map(minimumStayOf));
 
 export function App() {
   const [budget, setBudget] = useState('');
   const [vacationDays, setVacationDays] = useState('');
-  const [focusedId, setFocusedId] = useState<string | null>(null);
+  const [season, setSeason] = useState<Season | null>(null);
+  const [style, setStyle] = useState<TravelStyle>(standardStyle);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const budgetValue = Number(budget);
-  const vacationDaysValue = Number(vacationDays);
-  const ready = budgetValue > 0 && vacationDaysValue > 0;
+  const days = Number(vacationDays);
+  const hasBudget = budgetValue > 0;
+  const hasDays = days > 0;
 
-  // 只在輸入改變時重算：地球靠陣列是不是同一個來判斷航線要不要重畫。
+  // 有 Budget 就跟 Budget 比；還沒決定 Budget 時，只列出每個地方大概要多少。
   const plans = useMemo(
     () =>
-      ready
-        ? planTrips({ budget: budgetValue, vacationDays: vacationDaysValue }, destinations)
+      hasBudget && hasDays
+        ? planTrips({ budget: budgetValue, vacationDays: days, season, style }, destinations)
         : [],
-    [ready, budgetValue, vacationDaysValue],
+    [hasBudget, hasDays, budgetValue, days, season, style],
   );
-  const affordable = plans.filter((plan) => plan.status === 'affordable');
-  const shortfall = plans.filter((plan) => plan.status === 'shortfall');
+  const estimates = useMemo(
+    () =>
+      !hasBudget && hasDays
+        ? estimateTrips({ vacationDays: days, season, style }, destinations)
+        : [],
+    [hasBudget, hasDays, days, season, style],
+  );
+  const tooShort = useMemo(
+    () =>
+      hasDays
+        ? destinations
+            .filter((destination) => minimumStayOf(destination) > days)
+            .sort((a, b) => minimumStayOf(a) - minimumStayOf(b) || a.name.localeCompare(b.name))
+        : [],
+    [hasDays, days],
+  );
+
+  const affordableRows: TripRow[] = plans
+    .filter((plan) => plan.status === 'affordable')
+    .map((plan) => ({
+      id: plan.destination.id,
+      name: plan.destination.name,
+      tone: 'affordable',
+      value: formatTwd(plan.tripCost),
+    }));
+  const shortfallRows: TripRow[] = plans
+    .filter((plan) => plan.status === 'shortfall')
+    .map((plan) => ({
+      id: plan.destination.id,
+      name: plan.destination.name,
+      tone: 'shortfall',
+      value: `${formatTwd(plan.shortfall)} short`,
+    }));
+  const estimateRows: TripRow[] = estimates.map((estimate) => ({
+    id: estimate.destination.id,
+    name: estimate.destination.name,
+    tone: 'estimate',
+    value: formatTwd(estimate.tripCost),
+  }));
+  const tooShortRows: TripRow[] = tooShort.map((destination) => ({
+    id: destination.id,
+    name: destination.name,
+    tone: 'idle',
+    value: `${minimumStayOf(destination)}+ days`,
+  }));
+
+  const marks = useMemo(() => {
+    const byId = new Map<string, GlobeMark>();
+    for (const destination of destinations) {
+      const minimumStay = minimumStayOf(destination);
+      byId.set(destination.id, {
+        id: destination.id,
+        name: destination.name,
+        tone: 'idle',
+        note:
+          hasDays && minimumStay > days ? `Needs ${minimumStay}+ days` : 'Click to price a trip',
+      });
+    }
+    for (const plan of plans) {
+      const { id, name } = plan.destination;
+      byId.set(id, {
+        id,
+        name,
+        tone: plan.status,
+        note:
+          plan.status === 'affordable'
+            ? `${formatTwd(plan.tripCost)}, fits your budget`
+            : `${formatTwd(plan.shortfall)} short`,
+      });
+    }
+    for (const estimate of estimates) {
+      const { id, name } = estimate.destination;
+      byId.set(id, {
+        id,
+        name,
+        tone: 'estimate',
+        note: `About ${formatTwd(estimate.tripCost)} for ${days} days`,
+      });
+    }
+    return [...byId.values()];
+  }, [plans, estimates, hasDays, days]);
+
+  const reply = replyOf({
+    hasBudget,
+    hasDays,
+    days,
+    affordable: affordableRows.length,
+    listed: plans.length + estimates.length,
+  });
+  const assumptions = assumptionsOf(season, style);
+
+  // 換一個地方時，明細從頭看起；手機上明細在地球下方，捲過去讓 Traveler 看得到。
+  const detail = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const element = detail.current;
+    if (!element || !selectedId) return;
+    element.scrollTop = 0;
+    if (window.matchMedia('(max-width: 1099px)').matches) {
+      const smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      element.scrollIntoView({ block: 'start', behavior: smooth ? 'smooth' : 'auto' });
+    }
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedId(null);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [selectedId]);
+
+  const selected = selectedId ? destinationById.get(selectedId) : undefined;
 
   return (
     <div className="app">
       <header className="ask">
-        <h1 className="brand">現在能去哪</h1>
+        <h1 className="brand">Where can I go?</h1>
         {/* 兩個輸入欄就是 Traveler 對自己說的一句話。 */}
-        <form onSubmit={(event) => event.preventDefault()}>
-          <p className="ask-line">
-            我有
-            <InlineNumber
-              label="預算（新台幣元）"
-              value={budget}
-              placeholder="80000"
-              onChange={setBudget}
-            />
-            元，
-          </p>
-          <p className="ask-line">
-            還有
-            <InlineNumber
-              label="假期天數"
-              value={vacationDays}
-              placeholder="7"
-              onChange={setVacationDays}
-            />
-            天假。
-          </p>
+        <form className="sentence" onSubmit={(event) => event.preventDefault()}>
+          I have NT$
+          <InlineNumber
+            label="Budget in New Taiwan dollars"
+            value={budget}
+            placeholder="80,000"
+            onChange={setBudget}
+            grouped
+          />
+          and
+          <InlineNumber
+            label="Days off"
+            value={vacationDays}
+            placeholder="7"
+            onChange={setVacationDays}
+          />
+          days off.
         </form>
       </header>
 
-      <GlobeView plans={plans} focusedId={focusedId} onSelect={setFocusedId} />
+      <GlobeView marks={marks} selectedId={selectedId} onSelect={setSelectedId} />
 
-      <section className="answer">
+      <aside
+        ref={detail}
+        className={selectedId ? 'detail' : 'detail is-empty'}
+        aria-labelledby={selectedId ? 'detail-title' : undefined}
+      >
+        <TripDetail
+          selectedId={selectedId}
+          name={selected?.name ?? (selectedId ? regionName(selectedId, selectedId) : '')}
+          destination={selected}
+          vacationDays={days}
+          season={season}
+          style={style}
+          budget={hasBudget ? budgetValue : null}
+          onDaysChange={(next) => setVacationDays(String(next))}
+          onSeasonChange={setSeason}
+          onStyleChange={setStyle}
+          onUseAsBudget={(amount, tripDays) => {
+            setBudget(String(amount));
+            setVacationDays(String(tripDays));
+          }}
+          onClose={() => setSelectedId(null)}
+        />
+      </aside>
+
+      <section className="results" aria-label="Places">
         <div aria-live="polite">
-          {!ready ? (
-            <p className="reply quiet">填好這兩個數字，去得起的國家會在地球上亮起來。</p>
-          ) : plans.length === 0 ? (
-            <p className="reply quiet">這幾天假還不夠飛到任何地方。多請幾天，選擇就會出現。</p>
-          ) : affordable.length > 0 ? (
-            <h2 className="reply">現在就能去 {affordable.length} 個國家。</h2>
-          ) : (
-            <h2 className="reply quiet">現在的錢還不夠，不過有幾個地方只差一點。</h2>
-          )}
+          <p className={`reply ${reply.tone}`}>{reply.text}</p>
         </div>
 
-        <TripList plans={affordable} focusedId={focusedId} onSelect={setFocusedId} />
+        {assumptions.length > 0 && hasDays && (
+          <p className="assumptions">
+            Priced for {joinWithAnd(assumptions)}.{' '}
+            <button
+              type="button"
+              className="text-button"
+              onClick={() => {
+                setSeason(null);
+                setStyle(standardStyle);
+              }}
+            >
+              Reset
+            </button>
+          </p>
+        )}
 
-        {shortfall.length > 0 && (
+        <TripList rows={affordableRows} selectedId={selectedId} onSelect={setSelectedId} />
+        <TripList rows={estimateRows} selectedId={selectedId} onSelect={setSelectedId} />
+
+        {shortfallRows.length > 0 && (
           <>
-            <h2 className="later">再存一點就能去</h2>
-            <TripList plans={shortfall} focusedId={focusedId} onSelect={setFocusedId} />
+            <h2 className="group-title">Save a bit more</h2>
+            <TripList rows={shortfallRows} selectedId={selectedId} onSelect={setSelectedId} />
           </>
         )}
 
-        {plans.length > 0 && <p className="footnote">以一個人、一般價格估算，不是即時票價。</p>}
+        {tooShortRows.length > 0 && (
+          <>
+            <h2 className="group-title muted">Need more days</h2>
+            <TripList rows={tooShortRows} selectedId={selectedId} onSelect={setSelectedId} />
+          </>
+        )}
+
+        {plans.length + estimates.length > 0 && (
+          <p className="footnote">
+            Typical prices for one person, in TWD. Not live quotes, and visa or entry fees aren't
+            included.
+          </p>
+        )}
       </section>
     </div>
   );
 }
 
-type InlineNumberProps = {
-  label: string;
-  value: string;
-  placeholder: string;
-  onChange: (value: string) => void;
+type ReplyInput = {
+  hasBudget: boolean;
+  hasDays: boolean;
+  days: number;
+  affordable: number;
+  listed: number;
 };
 
-/** 嵌在句子裡的數字欄：只收數字，寬度跟著內容長。 */
-function InlineNumber({ label, value, placeholder, onChange }: InlineNumberProps) {
-  return (
-    <input
-      className="inline-number"
-      type="text"
-      inputMode="numeric"
-      autoComplete="off"
-      aria-label={label}
-      value={value}
-      placeholder={placeholder}
-      onChange={(event) => onChange(event.target.value.replace(/\D/g, ''))}
-      style={{ width: `${Math.max(value.length, placeholder.length) + 0.6}ch` }}
-    />
-  );
-}
-
-type TripListProps = {
-  plans: TripPlan[];
-  focusedId: string | null;
-  onSelect: (id: string) => void;
-};
-
-function TripList({ plans, focusedId, onSelect }: TripListProps) {
-  if (plans.length === 0) return null;
-
-  return (
-    <ul className="trips">
-      {plans.map((plan) => (
-        <li key={plan.destination.id}>
-          <button
-            type="button"
-            className={`trip ${plan.status}`}
-            aria-pressed={plan.destination.id === focusedId}
-            onClick={() => onSelect(plan.destination.id)}
-          >
-            <span className="lamp" aria-hidden="true" />
-            <span className="trip-name">{plan.destination.name}</span>
-            <span className="leader" aria-hidden="true" />
-            <span className="trip-cost">
-              {plan.status === 'affordable'
-                ? formatTwd(plan.tripCost)
-                : `還差 ${formatTwd(plan.shortfall)}`}
-            </span>
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
+/** 清單上方那一句話：先回答 Traveler 最想知道的事，零結果時說清楚是錢還是天數的問題。 */
+function replyOf({ hasBudget, hasDays, days, affordable, listed }: ReplyInput): {
+  text: string;
+  tone: 'lit' | 'plain' | 'quiet';
+} {
+  if (!hasDays) {
+    return hasBudget
+      ? { text: 'How many days off do you have?', tone: 'quiet' }
+      : {
+          text: 'Fill in both, or click any country on the globe to price a trip there.',
+          tone: 'quiet',
+        };
+  }
+  if (listed === 0) {
+    return {
+      text: `${days} ${days === 1 ? 'day is' : 'days are'} too short for a trip abroad. With ${shortestStay} days off, places nearby open up.`,
+      tone: 'quiet',
+    };
+  }
+  if (!hasBudget) {
+    return {
+      text: `${listed} places fit ${days} days. Here's roughly what each costs.`,
+      tone: 'plain',
+    };
+  }
+  if (affordable > 0) {
+    return {
+      text: `You can go to ${affordable} ${affordable === 1 ? 'place' : 'places'} right now.`,
+      tone: 'lit',
+    };
+  }
+  return { text: "Nothing fits yet, but these places aren't far off.", tone: 'quiet' };
 }

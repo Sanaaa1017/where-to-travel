@@ -25,7 +25,7 @@ _Avoid_: 航程, 飛多久, travel time
 _Avoid_: 最少天數, 門檻天數, minimum days
 
 **Destination**:
-Traveler 可能前往的地方。目前以「國家」為單位。
+Traveler 可能前往的地方。目前以「國家」為單位（香港這類地區也算一個）。
 _Avoid_: 地點, 城市, place, country
 
 **Trip Cost**:
@@ -33,7 +33,7 @@ _Avoid_: 地點, 城市, place, country
 _Avoid_: 價格, 花費, total price
 
 **Flight Cost**:
-Trip Cost 的第一項。來回機票的預估金額。
+Trip Cost 的第一項。來回機票的預估金額。會隨 Season 的淡旺季變動。
 _Avoid_: 機票錢, airfare
 
 **Accommodation Cost**:
@@ -41,8 +41,36 @@ Trip Cost 的第二項。整趟住宿的預估金額，按晚計算。
 _Avoid_: 住宿費, 飯店錢, hotel price
 
 **Daily Spend**:
-Trip Cost 的第三項。除住宿外，每天在當地的花費（餐食、當地交通、雜支）的預估金額。
+Trip Cost 的第三項。除住宿外，每天在當地的花費的預估金額，由 Food、Activities、Local Transport 三項相加。
 _Avoid_: 生活費, 日常開銷, cost of living
+
+**Food**:
+Daily Spend 的一部分。每天吃飯的預估金額。
+_Avoid_: 餐費, 食費, meals
+
+**Activities**:
+Daily Spend 的一部分。每天門票、體驗、玩樂的預估金額。
+_Avoid_: 玩樂費, 娛樂, entertainment, fun
+
+**Local Transport**:
+Daily Spend 的一部分。每天在當地移動的預估金額。
+_Avoid_: 交通費, getting around
+
+**Season**:
+Traveler 打算出發的季節，以台灣的月份劃分（春 3–5 月、夏 6–8 月、秋 9–11 月、冬 12–2 月）。可以不選；不選時用平季行情估算。它不是出發日期，見 ADR-0003。
+_Avoid_: 月份, 出發日期, travel dates
+
+**Demand**:
+某個 Season 對某個 Destination 來說是淡季、平季還是旺季。只影響 Flight Cost 與 Accommodation Cost。
+_Avoid_: 熱門程度, popularity
+
+**Travel Style**:
+Traveler 在住宿、Food、Activities 三項上各自想花到什麼程度：省一點、一般、寬鬆一點。一般就是資料集裡的原始行情。
+_Avoid_: 預算等級, 旅遊風格, tier
+
+**Estimate**:
+還沒跟 Budget 比較的 Trip Cost。Traveler 還沒決定 Budget、先點一個 Destination 想知道「去那裡要多少」時看到的就是它。
+_Avoid_: 報價, quote
 
 **Affordable**:
 一個 Destination 的 Trip Cost 不超過 Traveler 的 Budget。這是整個產品的核心判斷。

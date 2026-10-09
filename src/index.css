@@ -1,25 +1,25 @@
 /*
- * 凌晨一點、從飛機窗戶往下看的地球。
+ * 從飛機窗戶往下看的夜晚地球。
  * 去得起的地方是「燈」，差一點的是「遠光」，其他都還在夜裡。
  */
 :root {
   color-scheme: dark;
 
   --sky: #0c1230;
-  --land: #1f2754;
+  --surface: #10163a;
+  --raised: #182051;
+  --line: rgba(152, 160, 200, 0.16);
   --ink: #eceef8;
   --haze: #98a0c8;
   --lamp: #ffb547;
   --far: #9aa6ea;
 
-  /* 楷書像寫給自己的紙條；數字和小字交給系統黑體，清楚就好。 */
-  --voice: 'LXGW WenKai TC', 'Kaiti TC', 'BiauKai', 'DFKai-SB', serif;
-  --plain: 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+  --font: 'Manrope', system-ui, sans-serif;
+  --pad: 28px;
 
-  --gutter: clamp(1.25rem, 5vw, 4.5rem);
-
-  font-family: var(--plain);
-  line-height: 1.7;
+  font-family: var(--font);
+  font-size: 100%;
+  line-height: 1.55;
   color: var(--ink);
   background: var(--sky);
 }
@@ -33,32 +33,56 @@ body {
   background: var(--sky);
 }
 
-/* 左邊是那句話和回答，右邊是地球；地球跟著畫面走，不會被捲走。 */
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+ * 桌機三欄：左邊是那句話和清單，中間是地球，右邊是明細。
+ * 兩側各自捲動，地球一直留在畫面中央。
+ */
 .app {
-  min-height: 100dvh;
+  height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(20rem, 34rem) minmax(0, 1fr);
-  grid-template-rows: auto 1fr;
+  grid-template-columns: minmax(330px, 25vw) minmax(0, 1fr) minmax(350px, 27vw);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
-    'ask globe'
-    'answer globe';
+    'ask globe detail'
+    'results globe detail';
 }
 
 .ask {
   grid-area: ask;
-  padding: clamp(1.75rem, 5vh, 3rem) 2rem 0 var(--gutter);
+  padding: var(--pad) var(--pad) 8px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
 }
 
-.answer {
-  grid-area: answer;
-  padding: 2.25rem 2rem 4rem var(--gutter);
+.results {
+  grid-area: results;
+  overflow-y: auto;
+  padding: 0 var(--pad) var(--pad);
+  background: var(--surface);
+  border-right: 1px solid var(--line);
 }
 
 .globe-stage {
   grid-area: globe;
-  position: sticky;
-  top: 0;
-  height: 100dvh;
+  position: relative;
+  min-height: 0;
   background: radial-gradient(circle at 50% 50%, rgba(124, 137, 217, 0.12), transparent 62%);
 }
 
@@ -66,45 +90,47 @@ body {
   display: block;
 }
 
+.detail {
+  grid-area: detail;
+  overflow-y: auto;
+  padding: var(--pad);
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+}
+
 /* ---- 那句話 ---- */
 
 .brand {
-  margin: 0 0 clamp(2.5rem, 13vh, 7.5rem);
-  font-family: var(--voice);
-  font-size: 1rem;
-  font-weight: 400;
+  margin: 0 0 20px;
+  font-size: 0.875rem;
+  font-weight: 700;
   color: var(--haze);
 }
 
-.ask form {
-  display: block;
-}
-
-.ask-line {
-  margin: 0;
-  font-family: var(--voice);
-  font-size: clamp(2.25rem, 1.6rem + 2vw, 3.25rem);
-  line-height: 1.45;
+.sentence {
+  font-size: clamp(1.5rem, 1.1rem + 0.7vw, 1.875rem);
+  font-weight: 600;
+  line-height: 1.7;
+  letter-spacing: -0.02em;
 }
 
 .inline-number {
-  margin: 0 0.2em;
-  padding: 0 0.1em;
-  border: 0;
-  border-bottom: 2px solid color-mix(in srgb, var(--haze) 45%, transparent);
-  border-radius: 0;
-  background: transparent;
+  margin: 0 0.22em;
+  padding: 0 0.3em;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--raised);
   color: var(--ink);
   caret-color: var(--lamp);
   font: inherit;
-  font-weight: 700;
+  font-weight: 800;
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
 
 .inline-number::placeholder {
-  color: color-mix(in srgb, var(--haze) 50%, transparent);
-  font-weight: 400;
+  color: color-mix(in srgb, var(--haze) 55%, transparent);
+  font-weight: 600;
 }
 
 .inline-number:focus {
@@ -112,119 +138,468 @@ body {
 }
 
 .inline-number:focus-visible {
-  border-bottom-color: var(--lamp);
-  background: color-mix(in srgb, var(--lamp) 8%, transparent);
+  border-color: var(--lamp);
+  box-shadow: 0 0 0 1px var(--lamp);
 }
 
-/* ---- 回答 ---- */
+/* ---- 回答與清單 ---- */
 
 .reply {
-  margin: 0 0 1.25rem;
-  font-family: var(--voice);
-  font-size: 1.777rem;
-  font-weight: 400;
-  line-height: 1.45;
+  margin: 20px 0 4px;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.reply.lit {
   color: var(--lamp);
 }
 
 .reply.quiet {
-  font-size: 1.333rem;
+  color: var(--haze);
+  font-weight: 600;
+}
+
+.assumptions {
+  margin: 0;
+  font-size: 0.8125rem;
   color: var(--haze);
 }
 
-.later {
-  margin: 2.75rem 0 0.75rem;
-  font-family: var(--voice);
-  font-size: 1.333rem;
-  font-weight: 400;
+.group-title {
+  margin: 26px 0 2px;
+  font-size: 0.875rem;
+  font-weight: 700;
   color: var(--far);
+}
+
+.group-title.muted {
+  color: var(--haze);
 }
 
 .trips {
   list-style: none;
-  margin: 0;
+  margin: 8px 0 0;
   padding: 0;
 }
 
-/* 一行一個地方，名字和金額之間拉一條點線，像舊式的航班時刻表。 */
+/* 一行一個地方，名字和金額之間拉一條點線，像航班時刻表。 */
 .trip {
-  width: 100%;
+  width: calc(100% + 20px);
+  margin: 0 -10px;
   display: grid;
-  grid-template-columns: auto auto minmax(1.5rem, 1fr) auto;
-  align-items: baseline;
-  column-gap: 0.75rem;
-  padding: 0.5rem 0;
+  grid-template-columns: auto auto minmax(1rem, 1fr) auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 8px 10px;
   border: 0;
+  border-radius: 8px;
   background: none;
-  color: inherit;
-  font: inherit;
   text-align: left;
   cursor: pointer;
 }
 
-.lamp {
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 50%;
-  align-self: center;
+.trip:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
-.trip.affordable .lamp {
-  background: var(--lamp);
-  box-shadow: 0 0 0.6rem color-mix(in srgb, var(--lamp) 70%, transparent);
-}
-
-.trip.shortfall .lamp {
-  border: 1.5px solid var(--far);
-}
-
-.trip-name {
-  font-family: var(--voice);
-  font-size: 1.333rem;
-}
-
-.leader {
-  align-self: center;
-  border-bottom: 1px dotted color-mix(in srgb, var(--haze) 40%, transparent);
-}
-
-.trip-cost {
-  color: var(--haze);
-  font-variant-numeric: tabular-nums;
-}
-
-.trip:hover .trip-cost {
-  color: var(--ink);
-}
-
-.trip:hover .leader {
-  border-bottom-color: color-mix(in srgb, var(--haze) 75%, transparent);
-}
-
-.trip.affordable[aria-pressed='true'] .trip-name {
-  color: var(--lamp);
-}
-
-.trip.affordable[aria-pressed='true'] .leader {
-  border-bottom: 1px solid var(--lamp);
-}
-
-.trip.shortfall[aria-pressed='true'] .trip-name {
-  color: var(--far);
-}
-
-.trip.shortfall[aria-pressed='true'] .leader {
-  border-bottom: 1px solid var(--far);
+.trip[aria-pressed='true'] {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .trip:focus-visible {
   outline: 2px solid var(--lamp);
-  outline-offset: 4px;
-  border-radius: 4px;
+  outline-offset: 0;
+}
+
+.trip-name {
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.trip.idle .trip-name {
+  color: var(--haze);
+}
+
+.leader {
+  border-bottom: 1px dotted color-mix(in srgb, var(--haze) 35%, transparent);
+}
+
+.trip-value {
+  font-size: 0.875rem;
+  color: var(--haze);
+  font-variant-numeric: tabular-nums;
+}
+
+.trip:hover .trip-value,
+.trip[aria-pressed='true'] .trip-value {
+  color: var(--ink);
+}
+
+/* 燈號：和地球上的顏色一一對應。 */
+.lamp {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.affordable .lamp {
+  background: var(--lamp);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--lamp) 70%, transparent);
+}
+
+.shortfall .lamp {
+  border: 1.5px solid var(--far);
+}
+
+.estimate .lamp {
+  background: color-mix(in srgb, var(--ink) 70%, transparent);
+}
+
+.idle .lamp {
+  border: 1.5px dashed color-mix(in srgb, var(--haze) 60%, transparent);
 }
 
 .footnote {
-  margin: 2.75rem 0 0;
+  margin: 28px 0 0;
+  font-size: 0.8125rem;
+  color: var(--haze);
+}
+
+/* ---- 明細 ---- */
+
+.detail-empty h2 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.detail-empty p {
+  margin: 0;
+  color: var(--haze);
+  font-size: 0.9375rem;
+}
+
+.detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.detail-head h2 {
+  margin: 0;
+  font-size: 1.875rem;
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--raised);
+  cursor: pointer;
+}
+
+.close svg,
+.stepper svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+}
+
+.close:hover {
+  border-color: color-mix(in srgb, var(--haze) 50%, transparent);
+}
+
+.close:focus-visible,
+.stepper button:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 2px;
+}
+
+.detail-meta,
+.detail-note {
+  margin: 6px 0 24px;
+  font-size: 0.875rem;
+  color: var(--haze);
+}
+
+.field {
+  margin-bottom: 18px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--haze);
+}
+
+.field-note {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--haze);
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--raised);
+}
+
+.stepper button {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: none;
+  cursor: pointer;
+}
+
+.stepper button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.stepper button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.stepper output {
+  min-width: 5.5em;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.segmented {
+  display: flex;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--raised);
+}
+
+.segment {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.segment input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.segment span {
+  display: block;
+  padding: 6px;
+  border-radius: 7px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--haze);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.segment:hover span {
+  color: var(--ink);
+}
+
+.segment input:checked + span {
+  background: var(--ink);
+  color: var(--sky);
+}
+
+.segment input:focus-visible + span {
+  outline: 2px solid var(--lamp);
+  outline-offset: 1px;
+}
+
+.notice {
+  margin: 4px 0 18px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--far) 35%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--far) 9%, transparent);
+  font-size: 0.875rem;
+}
+
+.notice p {
+  margin: 0 0 6px;
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.text-button:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.costs {
+  margin-top: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--line);
+}
+
+.total-label {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--haze);
+}
+
+.total {
+  margin: 2px 0 14px;
+  font-size: 2.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 一條橫的長條，看得出每一項各占多少。各段之間留 2px 縫，不用顏色也分得開。 */
+.bar {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-segment {
+  min-width: 2px;
+  flex-basis: 0;
+}
+
+.lines {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.line {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  row-gap: 1px;
+  align-items: baseline;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  align-self: center;
+}
+
+.line-label {
+  font-weight: 600;
+}
+
+.line-amount {
+  font-weight: 700;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.line-detail {
+  grid-column: 2;
+  font-size: 0.8125rem;
+  color: var(--haze);
+  font-variant-numeric: tabular-nums;
+}
+
+.line-share {
+  grid-column: 3;
+  font-size: 0.8125rem;
+  color: var(--haze);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.line-control {
+  grid-column: 2 / 4;
+  margin-top: 10px;
+}
+
+.verdict {
+  margin: 20px 0 0;
+}
+
+p.verdict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.primary-button {
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--lamp);
+  color: var(--sky);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.primary-button:hover {
+  background: color-mix(in srgb, var(--lamp) 88%, white);
+}
+
+.primary-button:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.verdict-hint {
+  margin: 8px 0 0;
+  font-size: 0.8125rem;
+  color: var(--haze);
+  text-align: center;
+}
+
+.disclaimer {
+  margin: 20px 0 0;
   font-size: 0.8125rem;
   color: var(--haze);
 }
@@ -234,17 +609,18 @@ body {
 .origin {
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  font-family: var(--voice);
-  font-size: 0.875rem;
+  gap: 5px;
+  font-family: var(--font);
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--ink);
   pointer-events: none;
-  transform: translate(-0.3rem, -50%);
+  transform: translate(-4px, -50%);
 }
 
 .origin-dot {
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--ink);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 25%, transparent);
@@ -252,19 +628,19 @@ body {
 
 .globe-tip {
   display: grid;
-  gap: 0.1rem;
-  padding: 0.45rem 0.7rem;
-  border-radius: 0.4rem;
-  background: rgba(12, 18, 48, 0.94);
+  gap: 1px;
+  padding: 7px 11px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(12, 18, 48, 0.95);
   color: var(--ink);
-  font-family: var(--plain);
-  font-size: 0.875rem;
+  font-family: var(--font);
+  font-size: 0.8125rem;
 }
 
 .globe-tip strong {
-  font-family: var(--voice);
-  font-size: 1rem;
-  font-weight: 400;
+  font-size: 0.9375rem;
+  font-weight: 700;
 }
 
 .globe-tip span {
@@ -284,39 +660,53 @@ body {
   color: var(--haze);
 }
 
-/* 手機：那句話在最上面，地球在中間，清單接在下面，整頁自然往下捲。 */
-@media (max-width: 860px) {
+/*
+ * 窄螢幕：那句話在最上面，接著地球、明細、清單，整頁自然往下捲。
+ * 沒選地方時不顯示明細那一塊。
+ */
+@media (max-width: 1099px) {
+  :root {
+    --pad: 20px;
+  }
+
   .app {
+    height: auto;
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto auto;
+    grid-template-rows: none;
     grid-template-areas:
       'ask'
       'globe'
-      'answer';
+      'detail'
+      'results';
+  }
+
+  .ask,
+  .results {
+    background: none;
+    border: 0;
   }
 
   .ask {
-    padding: 1.5rem var(--gutter) 0;
-  }
-
-  .brand {
-    margin-bottom: 1.75rem;
-  }
-
-  .ask-line {
-    font-size: 2rem;
+    padding-bottom: 0;
   }
 
   .globe-stage {
-    position: relative;
-    height: 46svh;
+    height: 48svh;
   }
 
-  .answer {
-    padding: 0.5rem var(--gutter) 3rem;
+  .detail {
+    overflow: visible;
+    margin: 0 12px 8px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    scroll-margin-top: 12px;
   }
 
-  .reply {
-    font-size: 1.5rem;
+  .detail.is-empty {
+    display: none;
+  }
+
+  .results {
+    overflow: visible;
   }
 }
