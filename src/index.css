@@ -1,17 +1,27 @@
+/*
+ * 凌晨一點、從飛機窗戶往下看的地球。
+ * 去得起的地方是「燈」，差一點的是「遠光」，其他都還在夜裡。
+ */
 :root {
   color-scheme: dark;
-  font-family: system-ui, 'Noto Sans TC', sans-serif;
-  line-height: 1.6;
 
-  --ink: #e8edf7;
-  --ink-dim: #9aa7bd;
-  --night: #070b14;
-  --night-soft: rgba(16, 23, 38, 0.72);
-  --edge: rgba(140, 165, 210, 0.16);
-  --affordable: #3fca7d;
-  --shortfall: #c9903a;
+  --sky: #0c1230;
+  --land: #1f2754;
+  --ink: #eceef8;
+  --haze: #98a0c8;
+  --lamp: #ffb547;
+  --far: #9aa6ea;
 
-  --panel-width: 21rem;
+  /* 楷書像寫給自己的紙條；數字和小字交給系統黑體，清楚就好。 */
+  --voice: 'LXGW WenKai TC', 'Kaiti TC', 'BiauKai', 'DFKai-SB', serif;
+  --plain: 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei', system-ui, sans-serif;
+
+  --gutter: clamp(1.25rem, 5vw, 4.5rem);
+
+  font-family: var(--plain);
+  line-height: 1.7;
+  color: var(--ink);
+  background: var(--sky);
 }
 
 * {
@@ -20,199 +30,293 @@
 
 body {
   margin: 0;
-  color: var(--ink);
-  background:
-    radial-gradient(circle at 62% 42%, #16223d 0%, transparent 58%),
-    linear-gradient(160deg, #0a1020 0%, var(--night) 100%);
-  overflow: hidden;
+  background: var(--sky);
 }
 
+/* 左邊是那句話和回答，右邊是地球；地球跟著畫面走，不會被捲走。 */
 .app {
-  position: fixed;
-  inset: 0;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(20rem, 34rem) minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'ask globe'
+    'answer globe';
 }
 
-/* 地球是進站的第一眼——它鋪滿畫面，面板浮在上面。 */
+.ask {
+  grid-area: ask;
+  padding: clamp(1.75rem, 5vh, 3rem) 2rem 0 var(--gutter);
+}
+
+.answer {
+  grid-area: answer;
+  padding: 2.25rem 2rem 4rem var(--gutter);
+}
+
 .globe-stage {
-  position: absolute;
-  inset: 0 var(--panel-width) 0 0;
+  grid-area: globe;
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  background: radial-gradient(circle at 50% 50%, rgba(124, 137, 217, 0.12), transparent 62%);
 }
 
 .globe-stage canvas {
   display: block;
 }
 
-.panel {
-  position: absolute;
-  padding: 1.5rem;
-  backdrop-filter: blur(14px);
+/* ---- 那句話 ---- */
+
+.brand {
+  margin: 0 0 clamp(2.5rem, 13vh, 7.5rem);
+  font-family: var(--voice);
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--haze);
 }
 
-.controls {
-  top: 0;
-  left: 0;
-  width: 22rem;
-  border-radius: 0 0 1rem 0;
-  background: linear-gradient(160deg, var(--night-soft), rgba(16, 23, 38, 0.35));
+.ask form {
+  display: block;
 }
 
-.results {
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: var(--panel-width);
-  overflow-y: auto;
-  border-left: 1px solid var(--edge);
-  background: var(--night-soft);
+.ask-line {
+  margin: 0;
+  font-family: var(--voice);
+  font-size: clamp(2.25rem, 1.6rem + 2vw, 3.25rem);
+  line-height: 1.45;
 }
 
-h1 {
-  margin: 0 0 1.25rem;
-  font-size: 1.5rem;
-  letter-spacing: 0.02em;
-}
-
-form {
-  display: grid;
-  gap: 0.9rem;
-}
-
-label {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-  color: var(--ink-dim);
-}
-
-input {
-  font: inherit;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--edge);
-  border-radius: 0.6rem;
-  background: rgba(8, 13, 24, 0.6);
+.inline-number {
+  margin: 0 0.2em;
+  padding: 0 0.1em;
+  border: 0;
+  border-bottom: 2px solid color-mix(in srgb, var(--haze) 45%, transparent);
+  border-radius: 0;
+  background: transparent;
   color: var(--ink);
-}
-
-input:focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--affordable) 60%, transparent);
-  outline-offset: 1px;
-}
-
-.tally {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.tally strong {
-  color: var(--affordable);
-  font-size: 1.35rem;
+  caret-color: var(--lamp);
+  font: inherit;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
+  text-align: center;
 }
 
-.tally.muted {
-  margin-top: 1.75rem;
-  color: var(--ink-dim);
+.inline-number::placeholder {
+  color: color-mix(in srgb, var(--haze) 50%, transparent);
+  font-weight: 400;
 }
 
-.plans {
+.inline-number:focus {
+  outline: none;
+}
+
+.inline-number:focus-visible {
+  border-bottom-color: var(--lamp);
+  background: color-mix(in srgb, var(--lamp) 8%, transparent);
+}
+
+/* ---- 回答 ---- */
+
+.reply {
+  margin: 0 0 1.25rem;
+  font-family: var(--voice);
+  font-size: 1.777rem;
+  font-weight: 400;
+  line-height: 1.45;
+  color: var(--lamp);
+}
+
+.reply.quiet {
+  font-size: 1.333rem;
+  color: var(--haze);
+}
+
+.later {
+  margin: 2.75rem 0 0.75rem;
+  font-family: var(--voice);
+  font-size: 1.333rem;
+  font-weight: 400;
+  color: var(--far);
+}
+
+.trips {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: grid;
-  gap: 0.4rem;
 }
 
-.plans button {
-  font: inherit;
-  color: inherit;
+/* 一行一個地方，名字和金額之間拉一條點線，像舊式的航班時刻表。 */
+.trip {
   width: 100%;
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: auto auto minmax(1.5rem, 1fr) auto;
   align-items: baseline;
-  gap: 1rem;
-  padding: 0.6rem 0.8rem;
-  border: 1px solid color-mix(in srgb, var(--affordable) 30%, transparent);
-  border-radius: 0.6rem;
-  background: color-mix(in srgb, var(--affordable) 8%, transparent);
-  cursor: pointer;
+  column-gap: 0.75rem;
+  padding: 0.5rem 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
   text-align: left;
+  cursor: pointer;
 }
 
-.plans button:hover {
-  border-color: color-mix(in srgb, var(--affordable) 55%, transparent);
+.lamp {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  align-self: center;
 }
 
-.plans button.focused {
-  border-color: var(--affordable);
-  background: color-mix(in srgb, var(--affordable) 18%, transparent);
+.trip.affordable .lamp {
+  background: var(--lamp);
+  box-shadow: 0 0 0.6rem color-mix(in srgb, var(--lamp) 70%, transparent);
 }
 
-.plans.muted button {
-  border-color: color-mix(in srgb, var(--shortfall) 28%, transparent);
-  background: color-mix(in srgb, var(--shortfall) 7%, transparent);
+.trip.shortfall .lamp {
+  border: 1.5px solid var(--far);
 }
 
-.plans.muted button.focused {
-  border-color: var(--shortfall);
-  background: color-mix(in srgb, var(--shortfall) 16%, transparent);
+.trip-name {
+  font-family: var(--voice);
+  font-size: 1.333rem;
 }
 
-.name {
-  font-weight: 600;
+.leader {
+  align-self: center;
+  border-bottom: 1px dotted color-mix(in srgb, var(--haze) 40%, transparent);
 }
 
-.cost {
-  font-size: 0.85rem;
-  color: var(--ink-dim);
+.trip-cost {
+  color: var(--haze);
   font-variant-numeric: tabular-nums;
 }
 
-.hint {
-  margin: 0;
-  color: var(--ink-dim);
-  font-size: 0.9rem;
+.trip:hover .trip-cost {
+  color: var(--ink);
+}
+
+.trip:hover .leader {
+  border-bottom-color: color-mix(in srgb, var(--haze) 75%, transparent);
+}
+
+.trip.affordable[aria-pressed='true'] .trip-name {
+  color: var(--lamp);
+}
+
+.trip.affordable[aria-pressed='true'] .leader {
+  border-bottom: 1px solid var(--lamp);
+}
+
+.trip.shortfall[aria-pressed='true'] .trip-name {
+  color: var(--far);
+}
+
+.trip.shortfall[aria-pressed='true'] .leader {
+  border-bottom: 1px solid var(--far);
+}
+
+.trip:focus-visible {
+  outline: 2px solid var(--lamp);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.footnote {
+  margin: 2.75rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--haze);
+}
+
+/* ---- 地球上的東西 ---- */
+
+.origin {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--voice);
+  font-size: 0.875rem;
+  color: var(--ink);
+  pointer-events: none;
+  transform: translate(-0.3rem, -50%);
+}
+
+.origin-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 25%, transparent);
 }
 
 .globe-tip {
-  padding: 0.4rem 0.65rem;
-  border: 1px solid var(--edge);
-  border-radius: 0.5rem;
-  background: rgba(8, 13, 24, 0.92);
-  color: var(--ink);
-  font-size: 0.85rem;
   display: grid;
   gap: 0.1rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 0.4rem;
+  background: rgba(12, 18, 48, 0.94);
+  color: var(--ink);
+  font-family: var(--plain);
+  font-size: 0.875rem;
+}
+
+.globe-tip strong {
+  font-family: var(--voice);
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 .globe-tip span {
-  color: var(--ink-dim);
+  color: var(--haze);
   font-variant-numeric: tabular-nums;
 }
 
-.globe-tip.muted {
-  color: var(--ink-dim);
+.globe-tip.affordable strong {
+  color: var(--lamp);
 }
 
-/* 手機上排不出右欄，清單改成底部面板；地球仍然是第一眼。 */
-@media (max-width: 900px) {
+.globe-tip.shortfall strong {
+  color: var(--far);
+}
+
+.globe-tip.quiet {
+  color: var(--haze);
+}
+
+/* 手機：那句話在最上面，地球在中間，清單接在下面，整頁自然往下捲。 */
+@media (max-width: 860px) {
+  .app {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      'ask'
+      'globe'
+      'answer';
+  }
+
+  .ask {
+    padding: 1.5rem var(--gutter) 0;
+  }
+
+  .brand {
+    margin-bottom: 1.75rem;
+  }
+
+  .ask-line {
+    font-size: 2rem;
+  }
+
   .globe-stage {
-    inset: 0 0 45vh 0;
+    position: relative;
+    height: 46svh;
   }
 
-  .controls {
-    width: 100%;
-    max-width: 24rem;
-    background: none;
-    backdrop-filter: none;
-    padding-bottom: 0.5rem;
+  .answer {
+    padding: 0.5rem var(--gutter) 3rem;
   }
 
-  .results {
-    top: auto;
-    height: 45vh;
-    width: 100%;
-    border-left: none;
-    border-top: 1px solid var(--edge);
+  .reply {
+    font-size: 1.5rem;
   }
 }
